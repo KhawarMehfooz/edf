@@ -1,10 +1,9 @@
 <?php
 /**
  * Plugin Name: Email Domain Filter for WooCommerce
- * Description: A plugin to filter out specified email domains from receiving WooCommerce order notifications.
- * Version: 1.0.0
- * Author: Khawar Mehfooz
- * Author URI: https://khawarmehfooz.com
+ * Description: A plugin to filter out specified email domains from receiving any WooCommerce notifications.
+ * Version: 2.0.0
+ * Author: Your Name
  * Text Domain: khwr-edf
  * Domain Path: /languages
  */
@@ -27,8 +26,14 @@ class Email_Domain_Filter {
         add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
         add_action( 'admin_menu', array( $this, 'register_admin_page' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
-        add_filter( 'woocommerce_email_recipient_customer_completed_order', array( $this, 'filter_email_domains' ), 10, 2 );
-        add_filter( 'woocommerce_email_recipient_new_order', array( $this, 'filter_email_domains' ), 10, 2 );
+
+        // Hook to filter WooCommerce emails for customers
+        add_filter( 'woocommerce_email_recipient_customer_processing_order', array( $this, 'filter_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_completed_order', array( $this, 'filter_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_on_hold_order', array( $this, 'filter_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_invoice', array( $this, 'filter_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_refunded_order', array( $this, 'filter_customer_emails' ), 10, 2 );
+        add_filter( 'woocommerce_email_recipient_customer_note', array( $this, 'filter_customer_emails' ), 10, 2 );
     }
 
     /**
@@ -127,14 +132,14 @@ class Email_Domain_Filter {
     }
 
     /**
-     * Filter WooCommerce email recipients.
+     * Filter customer email notifications.
      *
-     * @param string $recipient The email recipient.
+     * @param string $recipient The email recipient(s).
      * @param object $order The WooCommerce order object.
      *
      * @return string
      */
-    public function filter_email_domains( $recipient, $order ) {
+    public function filter_customer_emails( $recipient, $order ) {
         $excluded_domains = get_option( 'excluded_email_domains', '' );
 
         if ( empty( $excluded_domains ) ) {
@@ -144,15 +149,19 @@ class Email_Domain_Filter {
         // Convert excluded domains into an array
         $excluded_domains = array_map( 'trim', explode( "\n", $excluded_domains ) );
 
-        // Get the recipient's email domain
-        $recipient_domain = substr( strrchr( $recipient, '@' ), 1 );
+        // Get the customer's email domain
+        $recipient_emails = explode( ',', $recipient );
+        $filtered_recipients = array();
 
-        // Check if the recipient's domain is in the excluded list
-        if ( in_array( $recipient_domain, $excluded_domains, true ) ) {
-            return ''; // Prevent the email from being sent
+        foreach ( $recipient_emails as $email ) {
+            $email_domain = substr( strrchr( $email, '@' ), 1 );
+            if ( ! in_array( $email_domain, $excluded_domains, true ) ) {
+                $filtered_recipients[] = $email; // Allow non-excluded domains
+            }
         }
 
-        return $recipient;
+        // Return updated recipients list
+        return implode( ',', $filtered_recipients );
     }
 }
 
