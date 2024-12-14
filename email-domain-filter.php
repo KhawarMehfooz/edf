@@ -2,8 +2,9 @@
 /**
  * Plugin Name: Email Domain Filter for WooCommerce
  * Description: A plugin to filter out specified email domains from receiving any WooCommerce notifications.
- * Version: 2.0.0
- * Author: Your Name
+ * Version: 1.0.0
+ * Author: Khawar Mehfooz
+ * Author URI: https://khawarmehfooz.com
  * Text Domain: khwr-edf
  * Domain Path: /languages
  */
